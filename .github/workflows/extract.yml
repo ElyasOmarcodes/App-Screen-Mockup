@@ -1,16 +1,15 @@
-name: Extract and Commit to Main Branch
+name: Organize Source Code to Root
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
-# د دې لپاره چې اکشن ته په برانچ کې د بدلون راوستلو (Push) اجازې ورکړل شي
 permissions:
   contents: write
 
 jobs:
-  extract-and-commit:
+  reorganize:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,25 +18,35 @@ jobs:
         with:
           ref: main
 
-      - name: Extract ZIP File into main directory
+      - name: Extract, move files to root and cleanup
         run: |
-          # فایلونه نیغ په نیغه په ریپازټري کې استخراجول
-          7z x PixelDeck-fixed-source.zip -o./ -y
-          
-          # که غواړئ اصلي zip فایل له استخراج وروسته حذف شي، لاندې لېکه فعال کړئ:
-          # rm PixelDeck-fixed-source.zip
+          # ۱. د زیپ فایل استخراجول (که شتون ولري)
+          if [ -f "PixelDeck-fixed-source.zip" ]; then
+            7z x PixelDeck-fixed-source.zip -o./ -y
+          fi
 
-      - name: Commit and Push extracted files
+          # ۲. د PixelDeck-fixed فولډر دننه ټول فایلونه روټ (اصلي لارې) ته رانقلول
+          if [ -d "PixelDeck-fixed" ]; then
+            shopt -s dotglob
+            mv PixelDeck-fixed/* ./
+            shopt -u dotglob
+            rm -rf PixelDeck-fixed
+          fi
+
+          # ۳. د زړو او اضافي فایلونو (Zip او Zip Extractor) پاکول
+          rm -f PixelDeck-fixed-source.zip "Zip Extractor"
+
+      - name: Commit and Push changes to main
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git add .
-          
-          # که نوي فایلونه زیات شوي وي، کمټ او پُش یې کړه
+
+          # کله چې بدلون راشي د تکراري اتوماتیک رن کېدو مخنیوي لپاره [skip ci] وژني
           if git diff --staged --quiet; then
             echo "کوم نوی بدلون نشته."
           else
-            git commit -m "Auto-extracted PixelDeck-fixed-source.zip contents into main branch"
+            git commit -m "Organize PixelDeck source files to root directory [skip ci]"
             git push
           fi
