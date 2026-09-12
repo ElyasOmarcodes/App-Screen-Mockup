@@ -1,15 +1,16 @@
-name: Organize Source Code to Root
+name: Extract and Commit to Main Branch
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
+# د دې لپاره چې اکشن ته په برانچ کې د بدلون راوستلو (Push) اجازې ورکړل شي
 permissions:
   contents: write
 
 jobs:
-  reorganize:
+  extract-and-commit:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,35 +19,25 @@ jobs:
         with:
           ref: main
 
-      - name: Extract, move files to root and cleanup
+      - name: Extract ZIP File into main directory
         run: |
-          # ۱. د زیپ فایل استخراجول (که شتون ولري)
-          if [ -f "PixelDeck-fixed-source.zip" ]; then
-            7z x PixelDeck-fixed-source.zip -o./ -y
-          fi
+          # فایلونه نیغ په نیغه په ریپازټري کې استخراجول
+          7z x PixelDeck-fixed-source.zip -o./ -y
+          
+          # که غواړئ اصلي zip فایل له استخراج وروسته حذف شي، لاندې لېکه فعال کړئ:
+          # rm PixelDeck-fixed-source.zip
 
-          # ۲. د PixelDeck-fixed فولډر دننه ټول فایلونه روټ (اصلي لارې) ته رانقلول
-          if [ -d "PixelDeck-fixed" ]; then
-            shopt -s dotglob
-            mv PixelDeck-fixed/* ./
-            shopt -u dotglob
-            rm -rf PixelDeck-fixed
-          fi
-
-          # ۳. د زړو او اضافي فایلونو (Zip او Zip Extractor) پاکول
-          rm -f PixelDeck-fixed-source.zip "Zip Extractor"
-
-      - name: Commit and Push changes to main
+      - name: Commit and Push extracted files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
+          
           git add .
-
-          # کله چې بدلون راشي د تکراري اتوماتیک رن کېدو مخنیوي لپاره [skip ci] وژني
+          
+          # که نوي فایلونه زیات شوي وي، کمټ او پُش یې کړه
           if git diff --staged --quiet; then
             echo "کوم نوی بدلون نشته."
           else
-            git commit -m "Organize PixelDeck source files to root directory [skip ci]"
+            git commit -m "Auto-extracted PixelDeck-fixed-source.zip contents into main branch"
             git push
           fi
