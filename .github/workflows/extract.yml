@@ -1,0 +1,34 @@
+name: Extract IPL File
+
+on:
+  # ۱. کله چې په main برانچ کې کوم نوی بدلون راشي، اتومات رن کېږي
+  push:
+    branches: [ "main" ]
+
+  # ۲. اتومات مکرر وخت (Cron Schedule) - د بېلګې په توګه هره ورځ نیمه شپه
+  schedule:
+    - cron: '0 0 * * *'
+
+  # ۳. د لاسي (Manual) رن کولو اختیار هم شتون لري
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Extract IPL Archive
+        run: |
+          mkdir -p extracted_files
+          7z x PixelDeck-fixed-source.IPL -oextracted_files/ -y
+
+      - name: Upload Extracted Files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixeldeck-extracted
+          path: extracted_files/
