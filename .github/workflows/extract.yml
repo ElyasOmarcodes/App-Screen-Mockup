@@ -1,15 +1,8 @@
 name: Extract IPL File
 
 on:
-  # ۱. کله چې په main برانچ کې کوم نوی بدلون راشي، اتومات رن کېږي
   push:
     branches: [ "main" ]
-
-  # ۲. اتومات مکرر وخت (Cron Schedule) - د بېلګې په توګه هره ورځ نیمه شپه
-  schedule:
-    - cron: '0 0 * * *'
-
-  # ۳. د لاسي (Manual) رن کولو اختیار هم شتون لري
   workflow_dispatch:
 
 jobs:
@@ -21,11 +14,24 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          lfs: true
 
-      - name: Extract IPL Archive
+      - name: Find and Extract IPL Archive
         run: |
           mkdir -p extracted_files
-          7z x PixelDeck-fixed-source.IPL -oextracted_files/ -y
+          
+          # د فایل ادرس په اتومات ډول موندل (قطعاً پاملرنه نه کوي چې غټ توري دي که واړه)
+          FILE_PATH=$(find . -iname "*PixelDeck-fixed-source.IPL*" -type f | head -n 1)
+          
+          if [ -z "$FILE_PATH" ]; then
+            echo "ERROR: د PixelDeck-fixed-source.IPL فایل په برانچ کې پیدا نشو!"
+            echo "په ریپازټري کې موجود فایلونه دادي:"
+            ls -la
+            exit 1
+          fi
+          
+          echo "فایل په دې ادرس پیدا شو: $FILE_PATH"
+          7z x "$FILE_PATH" -oextracted_files/ -y
 
       - name: Upload Extracted Files
         uses: actions/upload-artifact@v4
