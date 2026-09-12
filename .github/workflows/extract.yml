@@ -1,16 +1,15 @@
-name: Extract and Commit to Main Branch
+name: Extract ZIP to Main Branch
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
-# د دې لپاره چې اکشن ته په برانچ کې د بدلون راوستلو (Push) اجازې ورکړل شي
 permissions:
   contents: write
 
 jobs:
-  extract-and-commit:
+  extract-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,25 +18,27 @@ jobs:
         with:
           ref: main
 
-      - name: Extract ZIP File into main directory
+      - name: Extract ZIP and Cleanup
         run: |
-          # فایلونه نیغ په نیغه په ریپازټري کې استخراجول
+          # ۱. د زیپ فایل ټول محتویات استخراجول
           7z x PixelDeck-fixed-source.zip -o./ -y
           
-          # که غواړئ اصلي zip فایل له استخراج وروسته حذف شي، لاندې لېکه فعال کړئ:
-          # rm PixelDeck-fixed-source.zip
+          # ۲. د زیپ دننه د نورو ورکفلو فایلونو (لکه apps.yml) پاکول ترڅو د Permission تېروتنه ورنکړي
+          find .github/workflows/ -type f ! -name "extract.yml" -delete 2>/dev/null || true
+          
+          # ۳. د اصلي ZIP فایل لرې کول ترڅو ریپازټري درنه نشي
+          rm -f PixelDeck-fixed-source.zip
 
-      - name: Commit and Push extracted files
+      - name: Commit and Push to Main
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
           git add .
           
-          # که نوي فایلونه زیات شوي وي، کمټ او پُش یې کړه
           if git diff --staged --quiet; then
             echo "کوم نوی بدلون نشته."
           else
-            git commit -m "Auto-extracted PixelDeck-fixed-source.zip contents into main branch"
+            git commit -m "Auto extract PixelDeck source files into main branch"
             git push
           fi
